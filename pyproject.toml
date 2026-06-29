@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leaklens"
+version = "0.1.0"
+description = "Leakage & drift QA for ML datasets — catches target leakage, train/test contamination, distribution drift, temporal leakage, schema mismatches, and duplicate columns before they wreck your model."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Prajwal"}]
+keywords = ["machine-learning", "data-leakage", "data-drift", "data-quality", "mlops"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "plotly>=5.0",
+    "jinja2>=3.0",
+]
+
+[project.optional-dependencies]
+cli = ["typer>=0.9"]
+dev = ["pytest>=7.0", "pytest-cov", "ruff", "black", "mypy"]
+
+[project.scripts]
+leaklens = "leaklens.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Prajwal18py/leaklens"
+Repository = "https://github.com/Prajwal18py/leaklens"
+
+[tool.setuptools.packages.find]
+include = ["leaklens*"]
+
+[tool.setuptools.package-data]
+leaklens = ["templates/*.html"]

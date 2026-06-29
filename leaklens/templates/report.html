@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LeakLens Report</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root {
+    --critical: #e74c3c;
+    --warning: #f39c12;
+    --info: #3498db;
+    --ok: #2ecc71;
+    --bg: #f7f8fa;
+    --card-bg: #ffffff;
+    --text: #1f2430;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .container { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
+  header { margin-bottom: 28px; }
+  header h1 { font-size: 26px; margin: 0 0 4px; }
+  header .meta { color: var(--muted); font-size: 13px; }
+
+  .status-banner {
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    font-size: 15px;
+  }
+  .status-pass { background: #e9f9ee; color: #1d8348; border: 1px solid #b7e6c6; }
+  .status-fail { background: #fdecec; color: #b03a2e; border: 1px solid #f3b9b3; }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+  .card .count { font-size: 30px; font-weight: 700; }
+  .card .label { font-size: 13px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em;}
+  .card.critical .count { color: var(--critical); }
+  .card.warning .count { color: var(--warning); }
+  .card.info .count { color: var(--info); }
+  .card.checks .count { color: var(--text); }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 32px 0 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+  }
+
+  .issue {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--info);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .issue.critical { border-left-color: var(--critical); }
+  .issue.warning { border-left-color: var(--warning); }
+  .issue.info { border-left-color: var(--info); }
+  .issue-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .issue-column {
+    display: inline-block;
+    background: #f0f1f5;
+    border-radius: 6px;
+    padding: 1px 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+  .issue-message { font-size: 14px; color: #333; }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 0;
+    font-size: 15px;
+  }
+
+  .figures { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;}
+  .figure-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  @media (max-width: 720px) {
+    .summary-cards { grid-template-columns: 1fr 1fr; }
+    .figures { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>&#128269; LeakLens Report</h1>
+    <div class="meta">
+      {% if meta.n_train_rows %}Train rows: {{ meta.n_train_rows }}{% endif %}
+      {% if meta.n_test_rows %} &middot; Test rows: {{ meta.n_test_rows }}{% endif %}
+      {% if meta.target %} &middot; Target: <code>{{ meta.target }}</code>{% endif %}
+    </div>
+  </header>
+
+  {% if critical_count == 0 %}
+  <div class="status-banner status-pass">&#10004; PASSED &mdash; no critical issues found</div>
+  {% else %}
+  <div class="status-banner status-fail">&#10060; FAILED &mdash; {{ critical_count }} critical issue(s) found, review before training</div>
+  {% endif %}
+
+  <div class="summary-cards">
+    <div class="card critical">
+      <div class="count">{{ critical_count }}</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="card warning">
+      <div class="count">{{ warning_count }}</div>
+      <div class="label">Warnings</div>
+    </div>
+    <div class="card info">
+      <div class="count">{{ info_count }}</div>
+      <div class="label">Info</div>
+    </div>
+    <div class="card checks">
+      <div class="count">{{ checks_run | length }}</div>
+      <div class="label">Checks Run</div>
+    </div>
+  </div>
+
+  {% if figures_html %}
+  <div class="section-title">Visualizations</div>
+  <div class="figures">
+    {% for fig in figures_html %}
+    <div class="figure-card">{{ fig | safe }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="section-title">Issues ({{ issues | length }})</div>
+  {% if issues %}
+    {% for issue in issues %}
+    <div class="issue {{ issue.severity.value }}">
+      <div class="issue-title">
+        {% if issue.severity.value == "critical" %}&#10060;{% elif issue.severity.value == "warning" %}&#9888;{% else %}&#8505;{% endif %}
+        {{ issue.title }}
+        {% if issue.column %}<span class="issue-column">{{ issue.column }}</span>{% endif %}
+      </div>
+      <div class="issue-message">{{ issue.message }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">&#10004; No issues found across {{ checks_run | length }} checks.</div>
+  {% endif %}
+
+  <footer>Generated by LeakLens &mdash; leakage &amp; drift QA for ML datasets.</footer>
+</div>
+</body>
+</html>
