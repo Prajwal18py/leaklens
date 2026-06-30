@@ -24,3 +24,12 @@ class Config:
 
     # Constant / near-constant features
     constant_feature_threshold: float = 0.99
+
+    # Columns above this cardinality ratio (unique values / row count) are
+    # treated as identifiers (names, ticket numbers, free-text IDs) rather
+    # than real categorical features, and are skipped by the categorical
+    # drift (PSI) and unseen-categories checks — both produce pure noise on
+    # near-unique columns, since every value differing between train/test is
+    # expected, not a data quality issue.
+    high_cardinality_ratio_threshold: float = 0.3
+    high_cardinality_absolute_threshold: int = 50

@@ -4,179 +4,468 @@
 <meta charset="UTF-8">
 <title>LeakLens Report</title>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --critical: #e74c3c;
-    --warning: #f39c12;
-    --info: #3498db;
-    --ok: #2ecc71;
-    --bg: #f7f8fa;
-    --card-bg: #ffffff;
-    --text: #1f2430;
-    --muted: #6b7280;
-    --border: #e5e7eb;
+    --bg: #F8FAFC;
+    --card: #FFFFFF;
+    --border: #E5E7EB;
+    --primary: #2563EB;
+    --critical: #EF4444;
+    --warning: #F59E0B;
+    --success: #22C55E;
+    --info: #3B82F6;
+    --text: #0F172A;
+    --muted: #64748B;
+    --radius: 16px;
+    --shadow: 0 1px 2px rgba(15,23,42,0.04), 0 1px 8px rgba(15,23,42,0.04);
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
     color: var(--text);
+    -webkit-font-smoothing: antialiased;
   }
-  .container { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
-  header { margin-bottom: 28px; }
-  header h1 { font-size: 26px; margin: 0 0 4px; }
-  header .meta { color: var(--muted); font-size: 13px; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 28px 24px 80px; }
 
-  .status-banner {
-    padding: 14px 20px;
-    border-radius: 10px;
-    font-weight: 600;
+  /* ── Header ── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 24px;
-    font-size: 15px;
   }
-  .status-pass { background: #e9f9ee; color: #1d8348; border: 1px solid #b7e6c6; }
-  .status-fail { background: #fdecec; color: #b03a2e; border: 1px solid #f3b9b3; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  .brand .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chip b { color: var(--text); font-weight: 600; }
 
-  .summary-cards {
+  /* ── Status banner ── */
+  .status-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  .status-banner.high-risk { background: #FEF2F2; border-color: #FECACA; }
+  .status-banner.medium-risk { background: #FFFBEB; border-color: #FDE68A; }
+  .status-banner.low-risk { background: #F0FDF4; border-color: #BBF7D0; }
+  .status-left { display: flex; align-items: center; gap: 14px; }
+  .status-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .high-risk .status-icon { background: var(--critical); color: white; }
+  .medium-risk .status-icon { background: var(--warning); color: white; }
+  .low-risk .status-icon { background: var(--success); color: white; }
+  .status-title { font-size: 17px; font-weight: 700; letter-spacing: 0.02em; }
+  .high-risk .status-title { color: #B91C1C; }
+  .medium-risk .status-title { color: #B45309; }
+  .low-risk .status-title { color: #15803D; }
+  .status-desc { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+  .score-wrap { text-align: right; }
+  .score-num { font-size: 28px; font-weight: 700; }
+  .score-label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .score-formula { font-size: 10.5px; color: var(--muted); margin-top: 2px; max-width: 220px; }
+
+  /* ── Summary cards ── */
+  .summary-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
   .card {
-    background: var(--card-bg);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    text-align: center;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
   }
-  .card .count { font-size: 30px; font-weight: 700; }
-  .card .label { font-size: 13px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em;}
-  .card.critical .count { color: var(--critical); }
-  .card.warning .count { color: var(--warning); }
-  .card.info .count { color: var(--info); }
-  .card.checks .count { color: var(--text); }
+  .summary-card .top-row { display: flex; align-items: center; justify-content: space-between; }
+  .summary-card .num { font-size: 30px; font-weight: 700; line-height: 1; }
+  .summary-card .icon { width: 32px; height: 32px; border-radius: 9px; display:flex; align-items:center; justify-content:center; font-size: 15px;}
+  .summary-card .label { font-size: 12.5px; font-weight: 600; color: var(--text); margin-top: 10px; }
+  .summary-card .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .icon.critical { background: #FEE2E2; color: var(--critical); }
+  .icon.warning { background: #FEF3C7; color: var(--warning); }
+  .icon.success { background: #DCFCE7; color: var(--success); }
+  .icon.neutral { background: #DBEAFE; color: var(--primary); }
 
+  /* ── Section layout ── */
+  .row { display: grid; gap: 16px; margin-bottom: 20px; }
+  .row-3 { grid-template-columns: repeat(3, 1fr); }
+  .row-2 { grid-template-columns: 1.3fr 1fr; }
   .section-title {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 32px 0 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--muted);
+    font-size: 13px; font-weight: 700; color: var(--text);
+    margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.04em;
   }
 
-  .issue {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-left: 5px solid var(--info);
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-bottom: 12px;
+  /* ── Checks summary list ── */
+  .check-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
   }
-  .issue.critical { border-left-color: var(--critical); }
-  .issue.warning { border-left-color: var(--warning); }
-  .issue.info { border-left-color: var(--info); }
-  .issue-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
-  .issue-column {
-    display: inline-block;
-    background: #f0f1f5;
-    border-radius: 6px;
-    padding: 1px 8px;
-    font-size: 12px;
-    color: var(--muted);
-    margin-left: 6px;
-  }
-  .issue-message { font-size: 14px; color: #333; }
+  .check-row:last-child { border-bottom: none; }
+  .check-status { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; }
+  .check-status.passed { color: var(--success); }
+  .check-status.warning { color: var(--warning); }
+  .check-status.critical { color: var(--critical); }
 
-  .empty-state {
-    text-align: center;
-    color: var(--muted);
-    padding: 40px 0;
-    font-size: 15px;
-  }
+  /* ── Severity bar (horizontal stacked) ── */
+  .severity-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 10px 0 14px; background: #F1F5F9; }
+  .severity-bar .seg.critical { background: var(--critical); }
+  .severity-bar .seg.warning { background: var(--warning); }
+  .severity-legend { display: flex; gap: 18px; font-size: 12.5px; color: var(--muted); }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 
-  .figures { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;}
-  .figure-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 8px;
+  /* ── Overlap card ── */
+  .overlap-stats { display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .overlap-stat { text-align: center; }
+  .overlap-stat .n { font-size: 20px; font-weight: 700; }
+  .overlap-stat .l { font-size: 11.5px; color: var(--muted); }
+  .overlap-bar-track { height: 10px; background: #F1F5F9; border-radius: 6px; overflow: hidden; }
+  .overlap-bar-fill { height: 100%; background: var(--critical); }
+
+  /* ── Issue panels ── */
+  .issue-panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden;
   }
-  footer {
-    text-align: center;
-    color: var(--muted);
-    font-size: 12px;
-    margin-top: 40px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-  }
-  @media (max-width: 720px) {
-    .summary-cards { grid-template-columns: 1fr 1fr; }
-    .figures { grid-template-columns: 1fr; }
+  .issue-summary { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; list-style: none; }
+  .issue-summary::-webkit-details-marker { display: none; }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0; }
+  .badge.critical { background: #FEE2E2; color: var(--critical); }
+  .badge.warning { background: #FEF3C7; color: #B45309; }
+  .badge.info { background: #DBEAFE; color: var(--info); }
+  .issue-summary .it { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; }
+  .issue-summary .ic { font-size: 12px; color: var(--muted); background: #F1F5F9; border-radius: 6px; padding: 2px 8px; flex-shrink: 0; }
+  .chevron { color: var(--muted); transition: transform 0.15s; flex-shrink: 0; }
+  details[open] .chevron { transform: rotate(90deg); }
+  .issue-detail { padding: 0 18px 16px 18px; font-size: 13.5px; }
+  .issue-detail .row-label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 10px; }
+  .issue-detail .row-val { margin-top: 2px; line-height: 1.5; }
+  .issue-detail .rec-box { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 13px; color: #1E40AF; }
+
+  /* ── Drift ranking bars ── */
+  .drift-row { margin-bottom: 12px; }
+  .drift-row-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .drift-row-top .col-name { font-weight: 600; }
+  .drift-row-top .metric { color: var(--muted); font-family: ui-monospace, monospace; font-size: 12.5px; }
+  .drift-bar-track { height: 9px; background: #F1F5F9; border-radius: 5px; overflow: hidden; }
+  .drift-bar-fill { height: 100%; border-radius: 5px; }
+  .drift-bar-fill.critical { background: var(--critical); }
+  .drift-bar-fill.warning { background: var(--warning); }
+
+  /* ── High cardinality cards ── */
+  .hc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .hc-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: #FAFAFB; }
+  .hc-card .name { font-weight: 600; font-size: 13.5px; margin-bottom: 8px; }
+  .hc-card .stat-line { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .hc-card .stat-line b { color: var(--text); }
+  .hc-card .rec { font-size: 11.5px; color: var(--primary); margin-top: 8px; }
+
+  /* ── Data quality strip ── */
+  .dq-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .dq-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--card); }
+  .dq-card .dq-label { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+  .dq-card .dq-val { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+  .dq-bar-track { height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
+  .dq-bar-fill { height: 100%; background: var(--primary); border-radius: 3px; }
+
+  /* ── Numeric drift figures ── */
+  .numeric-figure-card { border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 14px; background: var(--card); }
+  .numeric-figure-stats { display: flex; gap: 20px; padding: 0 8px 8px; font-size: 12.5px; color: var(--muted); }
+  .numeric-figure-stats b { color: var(--text); }
+  .status-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
+  .status-pill.drifted { background: #FEE2E2; color: var(--critical); }
+  .status-pill.stable { background: #DCFCE7; color: var(--success); }
+
+  /* ── Recommendations ── */
+  .rec-panel { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius); padding: 18px 20px; }
+  .rec-item { display: flex; gap: 10px; font-size: 13.5px; color: #1E3A8A; margin-bottom: 10px; line-height: 1.5; }
+  .rec-item:last-child { margin-bottom: 0; }
+  .rec-num { font-weight: 700; flex-shrink: 0; }
+
+  /* ── Passed checks collapsible ── */
+  .passed-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .passed-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 6px 0; }
+  .passed-item .dot { color: var(--success); }
+
+  .empty-state { text-align: center; color: var(--muted); padding: 30px 0; font-size: 14px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 1000px) {
+    .summary-grid, .row-3 { grid-template-columns: repeat(2, 1fr); }
+    .row-2 { grid-template-columns: 1fr; }
+    .dq-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
 <body>
 <div class="container">
+
   <header>
-    <h1>&#128269; LeakLens Report</h1>
-    <div class="meta">
-      {% if meta.n_train_rows %}Train rows: {{ meta.n_train_rows }}{% endif %}
-      {% if meta.n_test_rows %} &middot; Test rows: {{ meta.n_test_rows }}{% endif %}
-      {% if meta.target %} &middot; Target: <code>{{ meta.target }}</code>{% endif %}
+    <div class="brand">
+      <span style="font-size:22px;">&#128269;</span>
+      <div>
+        <h1>LeakLens Report</h1>
+        <div class="sub">Leakage &amp; drift QA for ML datasets</div>
+      </div>
+    </div>
+    <div class="chips">
+      <div class="chip">&#128193; <b>{{ meta.dataset_name }}</b></div>
+      <div class="chip">v<b>{{ meta.version }}</b></div>
+      <div class="chip">&#9201; <b>{{ meta.runtime_seconds }}s</b></div>
+      <div class="chip">Train <b>{{ meta.n_train_rows }}</b></div>
+      {% if meta.n_test_rows %}<div class="chip">Test <b>{{ meta.n_test_rows }}</b></div>{% endif %}
+      {% if meta.target %}<div class="chip">Target <b>{{ meta.target }}</b></div>{% endif %}
     </div>
   </header>
 
-  {% if critical_count == 0 %}
-  <div class="status-banner status-pass">&#10004; PASSED &mdash; no critical issues found</div>
-  {% else %}
-  <div class="status-banner status-fail">&#10060; FAILED &mdash; {{ critical_count }} critical issue(s) found, review before training</div>
-  {% endif %}
-
-  <div class="summary-cards">
-    <div class="card critical">
-      <div class="count">{{ critical_count }}</div>
-      <div class="label">Critical</div>
+  {% set risk_class = "high-risk" if risk_label == "HIGH RISK" else ("medium-risk" if risk_label == "MEDIUM RISK" else "low-risk") %}
+  <div class="status-banner {{ risk_class }}">
+    <div class="status-left">
+      <div class="status-icon">
+        {% if risk_label == "HIGH RISK" %}&#10060;{% elif risk_label == "MEDIUM RISK" %}&#9888;{% else %}&#10004;{% endif %}
+      </div>
+      <div>
+        <div class="status-title">{{ risk_label }}</div>
+        <div class="status-desc">
+          {% if critical_count > 0 %}{{ critical_count }} critical issue(s) found &mdash; review before training.
+          {% elif warning_count > 0 %}{{ warning_count }} warning(s) found &mdash; review recommended.
+          {% else %}Dataset passed all checks.{% endif %}
+        </div>
+      </div>
     </div>
-    <div class="card warning">
-      <div class="count">{{ warning_count }}</div>
+    <div class="score-wrap">
+      <div class="score-num">{{ risk_score }}<span style="font-size:14px; color:var(--muted);">/100</span></div>
+      <div class="score-label">Data Quality Score</div>
+      <div class="score-formula">100 &minus; 20&times;critical &minus; 5&times;warning</div>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="card summary-card">
+      <div class="top-row"><div class="num" style="color:var(--critical)">{{ critical_count }}</div><div class="icon critical">&#10060;</div></div>
+      <div class="label">Critical Issues</div>
+      <div class="sub">Needs immediate attention</div>
+    </div>
+    <div class="card summary-card">
+      <div class="top-row"><div class="num" style="color:var(--warning)">{{ warning_count }}</div><div class="icon warning">&#9888;</div></div>
       <div class="label">Warnings</div>
+      <div class="sub">Should review</div>
     </div>
-    <div class="card info">
-      <div class="count">{{ info_count }}</div>
-      <div class="label">Info</div>
+    <div class="card summary-card">
+      <div class="top-row"><div class="num" style="color:var(--success)">{{ passed_count }}</div><div class="icon success">&#10004;</div></div>
+      <div class="label">Passed Checks</div>
+      <div class="sub">No issues found</div>
     </div>
-    <div class="card checks">
-      <div class="count">{{ checks_run | length }}</div>
-      <div class="label">Checks Run</div>
+    <div class="card summary-card">
+      <div class="top-row"><div class="num">{{ checks_run | length }}</div><div class="icon neutral">&#128202;</div></div>
+      <div class="label">Checks Executed</div>
+      <div class="sub">100% completed</div>
     </div>
   </div>
 
-  {% if figures_html %}
-  <div class="section-title">Visualizations</div>
-  <div class="figures">
-    {% for fig in figures_html %}
-    <div class="figure-card">{{ fig | safe }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
+  <div class="row row-3">
+    <div class="card">
+      <div class="section-title">Checks Summary</div>
+      {% for c in checks_status %}
+      <div class="check-row">
+        <span>{{ c.name }}</span>
+        <span class="check-status {{ c.status }}">
+          {% if c.status == "passed" %}&#10004; Passed{% else %}{{ c.count }} found{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
 
-  <div class="section-title">Issues ({{ issues | length }})</div>
+    <div class="card">
+      <div class="section-title">Issues by Severity</div>
+      {% set total_issues = critical_count + warning_count %}
+      <div class="severity-bar">
+        {% if total_issues > 0 %}
+        <div class="seg critical" style="width: {{ (critical_count / total_issues * 100) if total_issues else 0 }}%"></div>
+        <div class="seg warning" style="width: {{ (warning_count / total_issues * 100) if total_issues else 0 }}%"></div>
+        {% endif %}
+      </div>
+      <div class="severity-legend">
+        <span><span class="legend-dot" style="background:var(--critical)"></span>Critical ({{ critical_count }})</span>
+        <span><span class="legend-dot" style="background:var(--warning)"></span>Warning ({{ warning_count }})</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Train / Test Overlap</div>
+      <div class="overlap-stats">
+        <div class="overlap-stat"><div class="n">{{ overlap.train_rows }}</div><div class="l">Train rows</div></div>
+        <div class="overlap-stat"><div class="n">{{ overlap.test_rows }}</div><div class="l">Test rows</div></div>
+        <div class="overlap-stat"><div class="n" style="color:{{ 'var(--critical)' if overlap.overlap_count > 0 else 'var(--success)' }}">{{ overlap.overlap_pct }}%</div><div class="l">Overlap</div></div>
+      </div>
+      <div class="overlap-bar-track"><div class="overlap-bar-fill" style="width:{{ overlap.overlap_pct }}%"></div></div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top: 8px;">Top Issues ({{ issues | length }})</div>
   {% if issues %}
     {% for issue in issues %}
-    <div class="issue {{ issue.severity.value }}">
-      <div class="issue-title">
-        {% if issue.severity.value == "critical" %}&#10060;{% elif issue.severity.value == "warning" %}&#9888;{% else %}&#8505;{% endif %}
-        {{ issue.title }}
-        {% if issue.column %}<span class="issue-column">{{ issue.column }}</span>{% endif %}
+    <details class="issue-panel">
+      <summary class="issue-summary">
+        <span class="badge {{ issue.severity.value }}">{{ issue.severity.value }}</span>
+        <span class="it">{{ issue.title }}</span>
+        {% if issue.column %}<span class="ic">{{ issue.column }}</span>{% endif %}
+        <span class="chevron">&#9656;</span>
+      </summary>
+      <div class="issue-detail">
+        <div class="row-label">Explanation</div>
+        <div class="row-val">{{ issue.message }}</div>
+        {% if issue.details %}
+        <div class="row-label">Metric</div>
+        <div class="row-val">
+          {% for k, v in issue.details.items() %}<span style="margin-right:14px;"><b>{{ k }}</b>: {{ v }}</span>{% endfor %}
+        </div>
+        {% endif %}
       </div>
-      <div class="issue-message">{{ issue.message }}</div>
-    </div>
+    </details>
     {% endfor %}
   {% else %}
-    <div class="empty-state">&#10004; No issues found across {{ checks_run | length }} checks.</div>
+    <div class="card empty-state">&#10004; No issues found across {{ checks_run | length }} checks.</div>
+  {% endif %}
+
+  {% if drift_ranking %}
+  <div class="row row-2" style="margin-top: 20px;">
+    <div class="card">
+      <div class="section-title">Top Drifted Features</div>
+      {% for d in drift_ranking %}
+      <div class="drift-row">
+        <div class="drift-row-top">
+          <span class="col-name">{{ d.column }}</span>
+          <span class="metric">{{ d.metric_label }} = {{ "%.3f"|format(d.value) }}</span>
+        </div>
+        <div class="drift-bar-track"><div class="drift-bar-fill {{ d.severity }}" style="width:{{ d.bar_pct }}%"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if numeric_drift_figures %}
+    <div class="card">
+      <div class="section-title">Numeric Distribution &mdash; {{ numeric_drift_figures[0].column }}</div>
+      <div class="numeric-figure-card" style="border:none; padding:0;">
+        {{ numeric_drift_figures[0].html | safe }}
+        <div class="numeric-figure-stats">
+          <span><b>KS:</b> {{ numeric_drift_figures[0].ks_stat }}</span>
+          <span><b>p-value:</b> {{ numeric_drift_figures[0].p_value }}</span>
+          <span class="status-pill {{ 'drifted' if numeric_drift_figures[0].status == 'Drift Detected' else 'stable' }}">{{ numeric_drift_figures[0].status }}</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if numeric_drift_figures | length > 1 %}
+  <div class="section-title">More Drifted Numeric Columns</div>
+  <div class="row row-3">
+    {% for fig in numeric_drift_figures[1:] %}
+    <div class="numeric-figure-card">
+      {{ fig.html | safe }}
+      <div class="numeric-figure-stats">
+        <span><b>KS:</b> {{ fig.ks_stat }}</span>
+        <span class="status-pill {{ 'drifted' if fig.status == 'Drift Detected' else 'stable' }}">{{ fig.status }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if high_cardinality_cards %}
+  <div class="section-title" style="margin-top: 20px;">High-Cardinality Columns (not plotted)</div>
+  <div class="card">
+    <div class="hc-grid">
+      {% for hc in high_cardinality_cards %}
+      <div class="hc-card">
+        <div class="name">{{ hc.column }}</div>
+        <div class="stat-line"><span>Unique values</span><b>{{ hc.unique_values }}</b></div>
+        <div class="stat-line"><span>Unseen in test</span><b>{{ hc.unseen_count }}</b></div>
+        <div class="rec">{{ hc.recommendation }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section-title" style="margin-top: 20px;">Quick Data Quality Strip</div>
+  <div class="dq-grid">
+    <div class="dq-card">
+      <div class="dq-label">&#128203; Missing Values (train)</div>
+      <div class="dq-val">{{ data_quality.missing_train_pct }}%</div>
+      <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.missing_train_pct }}%"></div></div>
+    </div>
+    <div class="dq-card">
+      <div class="dq-label">&#128203; Duplicate Rows</div>
+      <div class="dq-val">{{ data_quality.duplicate_count }} <span style="font-size:12px;color:var(--muted)">({{ data_quality.duplicate_pct }}%)</span></div>
+      <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.duplicate_pct }}%"></div></div>
+    </div>
+    <div class="dq-card">
+      <div class="dq-label">&#128203; Constant Columns</div>
+      <div class="dq-val">{{ data_quality.constant_count }}</div>
+      <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.constant_pct }}%"></div></div>
+    </div>
+    <div class="dq-card">
+      <div class="dq-label">&#128203; High Cardinality</div>
+      <div class="dq-val">{{ data_quality.high_cardinality_count }}</div>
+      <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.high_cardinality_pct }}%"></div></div>
+    </div>
+    <div class="dq-card">
+      <div class="dq-label">&#128203; Dtype Mismatch</div>
+      <div class="dq-val">{{ data_quality.dtype_mismatch_count }}</div>
+      <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.dtype_mismatch_pct }}%"></div></div>
+    </div>
+  </div>
+
+  {% if recommendations %}
+  <div class="section-title" style="margin-top: 20px;">Recommendations</div>
+  <div class="rec-panel">
+    {% for rec in recommendations %}
+    <div class="rec-item"><span class="rec-num">{{ loop.index }}.</span><span>{{ rec }}</span></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% set passed = checks_status | selectattr("status", "equalto", "passed") | list %}
+  {% if passed %}
+  <details style="margin-top: 20px;">
+    <summary class="section-title" style="cursor:pointer; display:inline-block;">Passed Checks ({{ passed | length }}) &#9656;</summary>
+    <div class="card" style="margin-top: 10px;">
+      <div class="passed-list">
+        {% for p in passed %}
+        <div class="passed-item"><span class="dot">&#10004;</span>{{ p.name }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
   {% endif %}
 
   <footer>Generated by LeakLens &mdash; leakage &amp; drift QA for ML datasets.</footer>

@@ -6,12 +6,19 @@ from scipy.stats import ks_2samp
 from .base import BaseAnalyzer
 from ..models.issue import Issue
 from ..models.severity import Severity
-from ..utils import safe_numeric_columns
+from ..utils import safe_numeric_columns, is_likely_identifier_column
 
 
 class DriftAnalyzer(BaseAnalyzer):
     """Compares train vs test distributions column by column: KS test for
-    numeric columns, Population Stability Index (PSI) for categorical ones."""
+    numeric columns, Population Stability Index (PSI) for categorical ones.
+
+    Identifier-like categorical columns (names, ticket numbers, free-text
+    IDs) are skipped — every value differing between train/test is expected
+    for a near-unique column, so PSI/unseen-category checks there are noise,
+    not signal. Numeric columns are never skipped this way, since KS drift
+    on a numeric ID-like column (e.g. PassengerId) is still meaningful.
+    """
 
     name = "drift"
 
@@ -27,6 +34,12 @@ class DriftAnalyzer(BaseAnalyzer):
             if col in numeric_cols and col in safe_numeric_columns(test):
                 issues.extend(self._check_numeric_drift(col, train[col], test[col]))
             else:
+                if is_likely_identifier_column(
+                    train[col],
+                    self.config.high_cardinality_ratio_threshold,
+                    self.config.high_cardinality_absolute_threshold,
+                ):
+                    continue
                 issues.extend(self._check_categorical_drift(col, train[col], test[col]))
         return issues
 

@@ -4,6 +4,7 @@ import pandas as pd
 from .base import BaseAnalyzer
 from ..models.issue import Issue
 from ..models.severity import Severity
+from ..utils import is_likely_identifier_column
 
 
 class SchemaAnalyzer(BaseAnalyzer):
@@ -90,6 +91,12 @@ class SchemaAnalyzer(BaseAnalyzer):
             if c in test.columns and c != target
         ]
         for col in cat_cols:
+            if is_likely_identifier_column(
+                train[col],
+                self.config.high_cardinality_ratio_threshold,
+                self.config.high_cardinality_absolute_threshold,
+            ):
+                continue
             train_vals = set(train[col].dropna().unique())
             test_vals = set(test[col].dropna().unique())
             unseen = test_vals - train_vals

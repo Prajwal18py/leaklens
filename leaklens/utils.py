@@ -46,3 +46,23 @@ def safe_numeric_columns(df: pd.DataFrame):
 
 def safe_categorical_columns(df: pd.DataFrame):
     return df.select_dtypes(exclude="number").columns.tolist()
+
+
+def is_likely_identifier_column(series: pd.Series, ratio_threshold: float, absolute_threshold: int) -> bool:
+    """Heuristic for 'this is an ID/free-text column, not a real categorical
+    feature' — names, ticket numbers, cabin codes, etc. Columns like this
+    are near-unique by nature, so distribution-drift and unseen-category
+    checks on them produce pure noise rather than real signal.
+
+    Ratio is computed against the non-null count (not total rows), so a
+    sparse column like 'Cabin' (mostly missing, but the values it does have
+    are almost all unique) is still correctly recognized as identifier-like.
+    """
+    non_null = series.dropna()
+    n = len(non_null)
+    if n == 0:
+        return False
+    nunique = non_null.nunique()
+    if nunique < absolute_threshold:
+        return False
+    return (nunique / n) >= ratio_threshold
