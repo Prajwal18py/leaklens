@@ -34,6 +34,9 @@ def render_html(report) -> str:
         overlap=report.meta.get("overlap_stats", {}),
         numeric_drift_figures=report.meta.get("numeric_drift_figures", []),
         why_it_matters=report.meta.get("why_it_matters", {}),
+        fix_steps=report.meta.get("fix_steps", {}),
         risk_label=report.meta.get("risk_label", "LOW RISK"),
+        verdict=report.meta.get("verdict", "SAFE TO TRAIN"),
+        verdict_reason=report.meta.get("verdict_reason", ""),
         meta=report.meta,
     )

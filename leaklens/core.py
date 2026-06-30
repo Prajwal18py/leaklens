@@ -58,6 +58,23 @@ WHY_IT_MATTERS = {
 }
 
 
+# Short checklist-style fix steps shown inside each recommendation card —
+# presentation copy only, derived from the issue, not part of detection logic.
+FIX_STEPS = {
+    "Target Leakage": ["Verify the column isn't derived from the target", "Drop or re-engineer the column", "Re-run checks after removing it"],
+    "Distribution Drift": ["Verify the train/test split was done correctly", "Check if the column is an unintended ID/index", "Re-sample or retrain with newer data"],
+    "Train/Test Contamination": ["Re-run your split with deduplication", "Check for shared sampling pools between sets", "Remove overlapping rows before evaluating"],
+    "Duplicate Rows": ["Call df.drop_duplicates() before training", "Investigate why duplicates exist upstream"],
+    "Temporal Leakage": ["Sort by timestamp before splitting", "Use a strict cutoff date for train vs test", "Avoid random splits on time-ordered data"],
+    "Duplicate Columns": ["Inspect both columns to confirm redundancy", "Drop the less interpretable of the two"],
+    "Schema Mismatch": ["Diff train/test columns directly", "Align column names and ordering before training"],
+    "Dtype Mismatch": ["Cast both columns to the same dtype", "Check the data loading step for inconsistencies"],
+    "Unseen Categories": ["Use an encoder that handles unknowns (e.g. handle_unknown='ignore')", "Add an explicit 'unknown' bucket", "Re-check category coverage between sets"],
+    "Constant Feature": ["Drop the column — it adds no signal", "Confirm it isn't a data loading bug (e.g. wrong column selected)"],
+    "Near-Constant Feature": ["Review the column's variance", "Consider dropping if not domain-critical"],
+}
+
+
 class LeakLens:
     """Inspects a train/test split (or a single dataset) for the issues that
     most commonly invalidate an ML experiment: target leakage, train/test
@@ -137,7 +154,9 @@ class LeakLens:
         report.meta["overlap_stats"] = self._build_overlap_stats(report)
         report.meta["numeric_drift_figures"] = self._build_numeric_drift_figures(report)
         report.meta["why_it_matters"] = WHY_IT_MATTERS
+        report.meta["fix_steps"] = FIX_STEPS
         report.meta["risk_label"] = self._compute_risk_label(report)
+        report.meta["verdict"], report.meta["verdict_reason"] = self._compute_verdict(report)
 
         return report
 
@@ -326,3 +345,17 @@ class LeakLens:
         if len(report.warnings) > 0:
             return "MEDIUM RISK"
         return "LOW RISK"
+
+    @staticmethod
+    def _compute_verdict(report: Report):
+        """A one-line plain-English verdict, directly derived from the
+        critical/warning counts already on the report — not a new metric,
+        just a clearer restatement of data that's already there."""
+        critical_issues = report.critical
+        if critical_issues:
+            names = ", ".join(sorted({f"'{i.column}'" if i.column else i.title for i in critical_issues[:3]}))
+            reason = f"{len(critical_issues)} critical issue(s) found, including {names}."
+            return "DO NOT TRAIN", reason
+        if report.warnings:
+            return "TRAIN WITH CAUTION", f"{len(report.warnings)} warning(s) found — review before relying on results."
+        return "SAFE TO TRAIN", "All checks passed — no leakage, drift, or schema issues detected."
