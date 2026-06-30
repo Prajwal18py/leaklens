@@ -1,6 +1,8 @@
 import time
 from typing import Optional, List, Dict, Any
 
+from scipy.stats import ks_2samp
+
 from .config import Config
 from .exceptions import InvalidTargetError, EmptyDataFrameError
 from .utils import to_pandas, safe_numeric_columns, is_likely_identifier_column
@@ -13,7 +15,7 @@ from .analyzers.temporal import TemporalLeakageAnalyzer
 from .analyzers.duplicate_columns import DuplicateColumnsAnalyzer
 from .analyzers.schema import SchemaAnalyzer
 from .analyzers.preprocessing import PreprocessingLeakageAnalyzer
-from .visualizations.drift import numeric_drift_figure
+from .visualizations.drift import numeric_drift_kde_figure
 
 ANALYZER_DISPLAY_NAMES = {
     "target_leakage": "Target Leakage",
@@ -25,9 +27,6 @@ ANALYZER_DISPLAY_NAMES = {
     "preprocessing_leakage": "Preprocessing Leakage",
 }
 
-# Maps an issue title -> a generic, actionable recommendation. Kept separate
-# from the analyzers themselves (analyzers only ever emit facts); this is
-# presentation-layer advice, not part of the detection logic.
 RECOMMENDATION_TEMPLATES = {
     "Target Leakage": "Investigate and likely drop '{col}' before training — it appears to leak the target.",
     "Distribution Drift": "Distribution drift detected in '{col}'. Re-sample test data or retrain on more recent data.",
@@ -40,6 +39,22 @@ RECOMMENDATION_TEMPLATES = {
     "Unseen Categories": "Handle unseen categories in '{col}' with an 'unknown' bucket or a robust encoder.",
     "Constant Feature": "Drop '{col}' — it carries no information.",
     "Near-Constant Feature": "Review '{col}' — it has very low variance and may not be useful.",
+}
+
+# Short, generic "why this matters" context shown inside each issue's
+# expanded panel — not detection logic, purely explanatory copy.
+WHY_IT_MATTERS = {
+    "Target Leakage": "If a feature leaks the target, your model will look accurate during evaluation but fail in production, where that feature won't carry the same information.",
+    "Distribution Drift": "Models trained on one distribution often perform worse when evaluated on data with a different shape — your test metrics may not reflect real-world performance.",
+    "Train/Test Contamination": "If the same rows appear in both sets, your model has effectively already seen part of the test set — reported accuracy will be inflated.",
+    "Duplicate Rows": "Duplicate rows can bias a model toward over-represented examples and inflate validation scores.",
+    "Temporal Leakage": "If test data isn't strictly after train data in time, the model may be evaluated on information it wouldn't have had at training time.",
+    "Duplicate Columns": "Near-duplicate features add collinearity without new information, which can destabilize some models and waste training time.",
+    "Schema Mismatch": "A model trained on one column set will fail outright when scored on a dataset with a different schema.",
+    "Dtype Mismatch": "Type mismatches between train and test commonly cause silent encoding bugs or outright crashes at inference time.",
+    "Unseen Categories": "Most encoders (one-hot, label encoding) fail or silently produce wrong results on categories they never saw during fit.",
+    "Constant Feature": "A column with no variance contributes zero predictive signal and only adds noise/dimensionality.",
+    "Near-Constant Feature": "Very low-variance columns rarely help a model and can be safely dropped after a quick check.",
 }
 
 
@@ -70,7 +85,7 @@ class LeakLens:
         self.test = to_pandas(test) if test is not None else None
         self.target = target
         self.config = config or Config()
-        self.script = script  # optional source/path for the preprocessing-leak check
+        self.script = script
         self.dataset_name = dataset_name or "dataset"
 
         if self.train is None or len(self.train) == 0:
@@ -115,15 +130,14 @@ class LeakLens:
         report.meta["version"] = self._get_version()
 
         report.meta["checks_status"] = self._build_checks_status(analyzer_for_check)
-        report.meta["drift_ranking"] = self._build_drift_ranking(report)
+        report.meta["drift_ranking"] = self._build_full_drift_ranking(report)
         report.meta["high_cardinality_cards"] = self._build_high_cardinality_cards()
         report.meta["data_quality_strip"] = self._build_data_quality_strip(report)
         report.meta["recommendations"] = self._build_recommendations(report)
         report.meta["overlap_stats"] = self._build_overlap_stats(report)
         report.meta["numeric_drift_figures"] = self._build_numeric_drift_figures(report)
-        score, label = self._compute_risk_score(report)
-        report.meta["risk_score"] = score
-        report.meta["risk_label"] = label
+        report.meta["why_it_matters"] = WHY_IT_MATTERS
+        report.meta["risk_label"] = self._compute_risk_label(report)
 
         return report
 
@@ -153,23 +167,43 @@ class LeakLens:
             })
         return rows
 
-    def _build_drift_ranking(self, report: Report, top_n: int = 8) -> List[Dict[str, Any]]:
-        drift_issues = [i for i in report.issues if i.title == "Distribution Drift"]
+    def _build_full_drift_ranking(self, report: Report, top_n: int = 10) -> List[Dict[str, Any]]:
+        """Unlike v1, this ranks EVERY checked column (not just flagged
+        ones), so a single drifted column doesn't leave the panel looking
+        empty — stable columns show up too, just visually de-emphasized."""
+        if self.test is None:
+            return []
+
+        numeric_cols = set(safe_numeric_columns(self.train))
+        flagged = {i.column: i for i in report.issues if i.title == "Distribution Drift"}
+        common_cols = [c for c in self.train.columns if c in self.test.columns and c != self.target]
+
         rows = []
-        for i in drift_issues:
-            if "psi" in i.details:
-                metric_label, value = "PSI", i.details["psi"]
-            elif "ks_stat" in i.details:
-                metric_label, value = "KS", i.details["ks_stat"]
+        for col in common_cols:
+            if col in numeric_cols and col in safe_numeric_columns(self.test):
+                train_clean = self.train[col].dropna()
+                test_clean = self.test[col].dropna()
+                if len(train_clean) < 5 or len(test_clean) < 5:
+                    continue
+                stat, _ = ks_2samp(train_clean, test_clean)
+                metric_label, value = "KS", float(stat)
             else:
-                continue
-            rows.append({
-                "column": i.column,
-                "metric_label": metric_label,
-                "value": value,
-                "severity": i.severity.value,
-            })
-        rows.sort(key=lambda r: r["value"], reverse=True)
+                if is_likely_identifier_column(
+                    self.train[col],
+                    self.config.high_cardinality_ratio_threshold,
+                    self.config.high_cardinality_absolute_threshold,
+                ):
+                    continue
+                psi = DriftAnalyzer._calculate_psi(self.train[col], self.test[col])
+                if psi is None:
+                    continue
+                metric_label, value = "PSI", float(psi)
+
+            issue = flagged.get(col)
+            severity = issue.severity.value if issue else "stable"
+            rows.append({"column": col, "metric_label": metric_label, "value": value, "severity": severity})
+
+        rows.sort(key=lambda r: (r["severity"] != "critical", r["severity"] != "warning", -r["value"]))
         rows = rows[:top_n]
         max_val = max((r["value"] for r in rows), default=1) or 1
         for r in rows:
@@ -214,9 +248,7 @@ class LeakLens:
         total_rows = len(self.train) + (len(self.test) if self.test is not None else 0)
         dup_pct = (dup_count / total_rows * 100) if total_rows else 0.0
 
-        constant_count = sum(
-            1 for i in report.issues if i.title in ("Constant Feature", "Near-Constant Feature")
-        )
+        constant_count = sum(1 for i in report.issues if i.title in ("Constant Feature", "Near-Constant Feature"))
         dtype_mismatch_count = sum(1 for i in report.issues if i.title == "Dtype Mismatch")
         high_card_count = len(self._build_high_cardinality_cards())
         total_cols = max(len(self.train.columns), 1)
@@ -277,7 +309,7 @@ class LeakLens:
             col = issue.column
             if col not in self.test.columns:
                 continue
-            fig = numeric_drift_figure(col, self.train[col], self.test[col])
+            fig = numeric_drift_kde_figure(col, self.train[col], self.test[col])
             figures.append({
                 "column": col,
                 "html": fig.to_html(full_html=False, include_plotlyjs=False),
@@ -288,18 +320,9 @@ class LeakLens:
         return figures
 
     @staticmethod
-    def _compute_risk_score(report: Report):
-        """Transparent, fully-documented score — NOT a black-box metric.
-        Formula: 100 - 20*critical_issues - 5*warning_issues, floored at 0.
-        This is shown in the report itself so it's never an unexplained number.
-        """
-        critical = len(report.critical)
-        warning = len(report.warnings)
-        score = max(0, min(100, 100 - critical * 20 - warning * 5))
-        if critical > 0:
-            label = "HIGH RISK"
-        elif warning > 0:
-            label = "MEDIUM RISK"
-        else:
-            label = "LOW RISK"
-        return score, label
+    def _compute_risk_label(report: Report) -> str:
+        if len(report.critical) > 0:
+            return "HIGH RISK"
+        if len(report.warnings) > 0:
+            return "MEDIUM RISK"
+        return "LOW RISK"

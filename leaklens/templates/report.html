@@ -29,53 +29,21 @@
     color: var(--text);
     -webkit-font-smoothing: antialiased;
   }
-  .container { max-width: 1400px; margin: 0 auto; padding: 28px 24px 80px; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
 
-  /* ── Header ── */
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
+  header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
   .brand .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
   .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-  .chip {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 7px 12px;
-    font-size: 12.5px;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 7px 12px; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .chip b { color: var(--text); font-weight: 600; }
 
-  /* ── Status banner ── */
-  .status-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: var(--radius);
-    padding: 20px 24px;
-    margin-bottom: 20px;
-    border: 1px solid var(--border);
-  }
+  .status-banner { display: flex; align-items: center; gap: 14px; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; border: 1px solid var(--border); }
   .status-banner.high-risk { background: #FEF2F2; border-color: #FECACA; }
   .status-banner.medium-risk { background: #FFFBEB; border-color: #FDE68A; }
   .status-banner.low-risk { background: #F0FDF4; border-color: #BBF7D0; }
-  .status-left { display: flex; align-items: center; gap: 14px; }
-  .status-icon {
-    width: 38px; height: 38px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-  }
+  .status-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   .high-risk .status-icon { background: var(--critical); color: white; }
   .medium-risk .status-icon { background: var(--warning); color: white; }
   .low-risk .status-icon { background: var(--success); color: white; }
@@ -84,25 +52,12 @@
   .medium-risk .status-title { color: #B45309; }
   .low-risk .status-title { color: #15803D; }
   .status-desc { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
-  .score-wrap { text-align: right; }
-  .score-num { font-size: 28px; font-weight: 700; }
-  .score-label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-  .score-formula { font-size: 10.5px; color: var(--muted); margin-top: 2px; max-width: 220px; }
+  .status-meta { margin-left: auto; display: flex; gap: 22px; text-align: right; }
+  .status-meta .m-num { font-size: 18px; font-weight: 700; }
+  .status-meta .m-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
 
-  /* ── Summary cards ── */
-  .summary-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    box-shadow: var(--shadow);
-  }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
   .summary-card .top-row { display: flex; align-items: center; justify-content: space-between; }
   .summary-card .num { font-size: 30px; font-weight: 700; line-height: 1; }
   .summary-card .icon { width: 32px; height: 32px; border-radius: 9px; display:flex; align-items:center; justify-content:center; font-size: 15px;}
@@ -113,34 +68,24 @@
   .icon.success { background: #DCFCE7; color: var(--success); }
   .icon.neutral { background: #DBEAFE; color: var(--primary); }
 
-  /* ── Section layout ── */
   .row { display: grid; gap: 16px; margin-bottom: 20px; }
   .row-3 { grid-template-columns: repeat(3, 1fr); }
   .row-2 { grid-template-columns: 1.3fr 1fr; }
-  .section-title {
-    font-size: 13px; font-weight: 700; color: var(--text);
-    margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.04em;
-  }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text); margin: 0 0 14px; text-transform: uppercase; letter-spacing: 0.04em; }
 
-  /* ── Checks summary list ── */
-  .check-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
-  }
+  .check-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
   .check-row:last-child { border-bottom: none; }
   .check-status { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12.5px; }
   .check-status.passed { color: var(--success); }
   .check-status.warning { color: var(--warning); }
   .check-status.critical { color: var(--critical); }
 
-  /* ── Severity bar (horizontal stacked) ── */
   .severity-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 10px 0 14px; background: #F1F5F9; }
   .severity-bar .seg.critical { background: var(--critical); }
   .severity-bar .seg.warning { background: var(--warning); }
   .severity-legend { display: flex; gap: 18px; font-size: 12.5px; color: var(--muted); }
   .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
 
-  /* ── Overlap card ── */
   .overlap-stats { display: flex; justify-content: space-between; margin-bottom: 12px; }
   .overlap-stat { text-align: center; }
   .overlap-stat .n { font-size: 20px; font-weight: 700; }
@@ -148,11 +93,7 @@
   .overlap-bar-track { height: 10px; background: #F1F5F9; border-radius: 6px; overflow: hidden; }
   .overlap-bar-fill { height: 100%; background: var(--critical); }
 
-  /* ── Issue panels ── */
-  .issue-panel {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden;
-  }
+  .issue-panel { background: var(--card); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; box-shadow: var(--shadow); overflow: hidden; }
   .issue-summary { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; list-style: none; }
   .issue-summary::-webkit-details-marker { display: none; }
   .badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0; }
@@ -163,12 +104,15 @@
   .issue-summary .ic { font-size: 12px; color: var(--muted); background: #F1F5F9; border-radius: 6px; padding: 2px 8px; flex-shrink: 0; }
   .chevron { color: var(--muted); transition: transform 0.15s; flex-shrink: 0; }
   details[open] .chevron { transform: rotate(90deg); }
-  .issue-detail { padding: 0 18px 16px 18px; font-size: 13.5px; }
-  .issue-detail .row-label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 10px; }
-  .issue-detail .row-val { margin-top: 2px; line-height: 1.5; }
-  .issue-detail .rec-box { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 13px; color: #1E40AF; }
+  .issue-detail { padding: 0 18px 18px 18px; font-size: 13.5px; }
+  .issue-detail .row-label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 12px; }
+  .issue-detail .row-val { margin-top: 3px; line-height: 1.5; }
+  .metric-grid { display: flex; gap: 24px; margin-top: 4px; flex-wrap: wrap; }
+  .metric-item .mv { font-size: 16px; font-weight: 700; }
+  .metric-item .ml { font-size: 11px; color: var(--muted); }
+  .why-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 13px; line-height: 1.5; }
+  .rec-box { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 10px 12px; margin-top: 10px; font-size: 13px; color: #1E40AF; }
 
-  /* ── Drift ranking bars ── */
   .drift-row { margin-bottom: 12px; }
   .drift-row-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
   .drift-row-top .col-name { font-weight: 600; }
@@ -177,8 +121,8 @@
   .drift-bar-fill { height: 100%; border-radius: 5px; }
   .drift-bar-fill.critical { background: var(--critical); }
   .drift-bar-fill.warning { background: var(--warning); }
+  .drift-bar-fill.stable { background: #CBD5E1; }
 
-  /* ── High cardinality cards ── */
   .hc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
   .hc-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: #FAFAFB; }
   .hc-card .name { font-weight: 600; font-size: 13.5px; margin-bottom: 8px; }
@@ -186,7 +130,6 @@
   .hc-card .stat-line b { color: var(--text); }
   .hc-card .rec { font-size: 11.5px; color: var(--primary); margin-top: 8px; }
 
-  /* ── Data quality strip ── */
   .dq-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
   .dq-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--card); }
   .dq-card .dq-label { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
@@ -194,7 +137,6 @@
   .dq-bar-track { height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
   .dq-bar-fill { height: 100%; background: var(--primary); border-radius: 3px; }
 
-  /* ── Numeric drift figures ── */
   .numeric-figure-card { border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 14px; background: var(--card); }
   .numeric-figure-stats { display: flex; gap: 20px; padding: 0 8px 8px; font-size: 12.5px; color: var(--muted); }
   .numeric-figure-stats b { color: var(--text); }
@@ -202,19 +144,18 @@
   .status-pill.drifted { background: #FEE2E2; color: var(--critical); }
   .status-pill.stable { background: #DCFCE7; color: var(--success); }
 
-  /* ── Recommendations ── */
-  .rec-panel { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius); padding: 18px 20px; }
-  .rec-item { display: flex; gap: 10px; font-size: 13.5px; color: #1E3A8A; margin-bottom: 10px; line-height: 1.5; }
-  .rec-item:last-child { margin-bottom: 0; }
-  .rec-num { font-weight: 700; flex-shrink: 0; }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .rec-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 14px 16px; font-size: 13px; color: #1E3A8A; line-height: 1.5; }
+  .rec-card .rec-head { font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; color: #1D4ED8; }
 
-  /* ── Passed checks collapsible ── */
   .passed-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .passed-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 6px 0; }
   .passed-item .dot { color: var(--success); }
 
   .empty-state { text-align: center; color: var(--muted); padding: 30px 0; font-size: 14px; }
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border); }
+  footer a { color: var(--primary); text-decoration: none; margin: 0 6px; }
+  footer a:hover { text-decoration: underline; }
 
   @media (max-width: 1000px) {
     .summary-grid, .row-3 { grid-template-columns: repeat(2, 1fr); }
@@ -230,8 +171,8 @@
     <div class="brand">
       <span style="font-size:22px;">&#128269;</span>
       <div>
-        <h1>LeakLens Report</h1>
-        <div class="sub">Leakage &amp; drift QA for ML datasets</div>
+        <h1>LeakLens</h1>
+        <div class="sub">The pre-flight checklist for machine learning datasets</div>
       </div>
     </div>
     <div class="chips">
@@ -246,23 +187,21 @@
 
   {% set risk_class = "high-risk" if risk_label == "HIGH RISK" else ("medium-risk" if risk_label == "MEDIUM RISK" else "low-risk") %}
   <div class="status-banner {{ risk_class }}">
-    <div class="status-left">
-      <div class="status-icon">
-        {% if risk_label == "HIGH RISK" %}&#10060;{% elif risk_label == "MEDIUM RISK" %}&#9888;{% else %}&#10004;{% endif %}
-      </div>
-      <div>
-        <div class="status-title">{{ risk_label }}</div>
-        <div class="status-desc">
-          {% if critical_count > 0 %}{{ critical_count }} critical issue(s) found &mdash; review before training.
-          {% elif warning_count > 0 %}{{ warning_count }} warning(s) found &mdash; review recommended.
-          {% else %}Dataset passed all checks.{% endif %}
-        </div>
+    <div class="status-icon">
+      {% if risk_label == "HIGH RISK" %}&#10060;{% elif risk_label == "MEDIUM RISK" %}&#9888;{% else %}&#10004;{% endif %}
+    </div>
+    <div>
+      <div class="status-title">{{ risk_label }}</div>
+      <div class="status-desc">
+        {% if critical_count > 0 %}{{ critical_count }} critical issue(s) found &mdash; review before training.
+        {% elif warning_count > 0 %}{{ warning_count }} warning(s) found &mdash; review recommended.
+        {% else %}Dataset passed all checks.{% endif %}
       </div>
     </div>
-    <div class="score-wrap">
-      <div class="score-num">{{ risk_score }}<span style="font-size:14px; color:var(--muted);">/100</span></div>
-      <div class="score-label">Data Quality Score</div>
-      <div class="score-formula">100 &minus; 20&times;critical &minus; 5&times;warning</div>
+    <div class="status-meta">
+      <div><div class="m-num">{{ critical_count }}</div><div class="m-label">Critical</div></div>
+      <div><div class="m-num">{{ passed_count }}</div><div class="m-label">Passed</div></div>
+      <div><div class="m-num">{{ meta.runtime_seconds }}s</div><div class="m-label">Runtime</div></div>
     </div>
   </div>
 
@@ -283,15 +222,15 @@
       <div class="sub">No issues found</div>
     </div>
     <div class="card summary-card">
-      <div class="top-row"><div class="num">{{ checks_run | length }}</div><div class="icon neutral">&#128202;</div></div>
+      <div class="top-row"><div class="num">{{ passed_count }}/{{ checks_run | length }}</div><div class="icon neutral">&#128202;</div></div>
       <div class="label">Checks Executed</div>
-      <div class="sub">100% completed</div>
+      <div class="sub">{{ ((passed_count / checks_run|length * 100) if checks_run|length else 0) | round | int }}% passed</div>
     </div>
   </div>
 
   <div class="row row-3">
     <div class="card">
-      <div class="section-title">Checks Summary</div>
+      <div class="section-title">&#128203; Checks Summary</div>
       {% for c in checks_status %}
       <div class="check-row">
         <span>{{ c.name }}</span>
@@ -328,7 +267,7 @@
     </div>
   </div>
 
-  <div class="section-title" style="margin-top: 8px;">Top Issues ({{ issues | length }})</div>
+  <div class="section-title" style="margin-top: 8px;">&#9888; Top Issues ({{ issues | length }})</div>
   {% if issues %}
     {% for issue in issues %}
     <details class="issue-panel">
@@ -341,12 +280,28 @@
       <div class="issue-detail">
         <div class="row-label">Explanation</div>
         <div class="row-val">{{ issue.message }}</div>
+
         {% if issue.details %}
-        <div class="row-label">Metric</div>
-        <div class="row-val">
-          {% for k, v in issue.details.items() %}<span style="margin-right:14px;"><b>{{ k }}</b>: {{ v }}</span>{% endfor %}
+        <div class="row-label">Metrics</div>
+        <div class="metric-grid">
+          {% for k, v in issue.details.items() %}
+          {% if k not in ("test",) %}
+          <div class="metric-item">
+            <div class="mv">{{ "%.4f"|format(v) if v is number and (v is not integer or v|float != v) else v }}</div>
+            <div class="ml">{{ k }}</div>
+          </div>
+          {% endif %}
+          {% endfor %}
         </div>
         {% endif %}
+
+        {% if why_it_matters.get(issue.title) %}
+        <div class="row-label">Why it matters</div>
+        <div class="why-box">{{ why_it_matters[issue.title] }}</div>
+        {% endif %}
+
+        <div class="row-label">Recommendation</div>
+        <div class="rec-box">{{ issue.column and ("Review '" + issue.column + "' before training — " + issue.message.split('—')[0].strip().lower() + ".") or issue.message }}</div>
       </div>
     </details>
     {% endfor %}
@@ -355,9 +310,15 @@
   {% endif %}
 
   {% if drift_ranking %}
+  {% set has_real_drift = drift_ranking | selectattr("severity", "ne", "stable") | list | length > 0 %}
   <div class="row row-2" style="margin-top: 20px;">
     <div class="card">
-      <div class="section-title">Top Drifted Features</div>
+      <div class="section-title">&#128200; Top Drifted Features</div>
+      {% if not has_real_drift %}
+      <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13px; color:#15803D;">
+        &#10004; All checked features are stable &mdash; no significant drift detected.
+      </div>
+      {% endif %}
       {% for d in drift_ranking %}
       <div class="drift-row">
         <div class="drift-row-top">
@@ -371,7 +332,7 @@
 
     {% if numeric_drift_figures %}
     <div class="card">
-      <div class="section-title">Numeric Distribution &mdash; {{ numeric_drift_figures[0].column }}</div>
+      <div class="section-title">&#128201; Numeric Distribution &mdash; {{ numeric_drift_figures[0].column }}</div>
       <div class="numeric-figure-card" style="border:none; padding:0;">
         {{ numeric_drift_figures[0].html | safe }}
         <div class="numeric-figure-stats">
@@ -401,7 +362,7 @@
   {% endif %}
 
   {% if high_cardinality_cards %}
-  <div class="section-title" style="margin-top: 20px;">High-Cardinality Columns (not plotted)</div>
+  <div class="section-title" style="margin-top: 20px;">&#128193; High-Cardinality Columns (not plotted)</div>
   <div class="card">
     <div class="hc-grid">
       {% for hc in high_cardinality_cards %}
@@ -416,40 +377,43 @@
   </div>
   {% endif %}
 
-  <div class="section-title" style="margin-top: 20px;">Quick Data Quality Strip</div>
+  <div class="section-title" style="margin-top: 20px;">&#128202; Quick Data Quality Strip</div>
   <div class="dq-grid">
     <div class="dq-card">
-      <div class="dq-label">&#128203; Missing Values (train)</div>
+      <div class="dq-label">Missing Values (train)</div>
       <div class="dq-val">{{ data_quality.missing_train_pct }}%</div>
       <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.missing_train_pct }}%"></div></div>
     </div>
     <div class="dq-card">
-      <div class="dq-label">&#128203; Duplicate Rows</div>
+      <div class="dq-label">Duplicate Rows</div>
       <div class="dq-val">{{ data_quality.duplicate_count }} <span style="font-size:12px;color:var(--muted)">({{ data_quality.duplicate_pct }}%)</span></div>
       <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.duplicate_pct }}%"></div></div>
     </div>
     <div class="dq-card">
-      <div class="dq-label">&#128203; Constant Columns</div>
+      <div class="dq-label">Constant Columns</div>
       <div class="dq-val">{{ data_quality.constant_count }}</div>
       <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.constant_pct }}%"></div></div>
     </div>
     <div class="dq-card">
-      <div class="dq-label">&#128203; High Cardinality</div>
+      <div class="dq-label">High Cardinality</div>
       <div class="dq-val">{{ data_quality.high_cardinality_count }}</div>
       <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.high_cardinality_pct }}%"></div></div>
     </div>
     <div class="dq-card">
-      <div class="dq-label">&#128203; Dtype Mismatch</div>
+      <div class="dq-label">Dtype Mismatch</div>
       <div class="dq-val">{{ data_quality.dtype_mismatch_count }}</div>
       <div class="dq-bar-track"><div class="dq-bar-fill" style="width:{{ data_quality.dtype_mismatch_pct }}%"></div></div>
     </div>
   </div>
 
   {% if recommendations %}
-  <div class="section-title" style="margin-top: 20px;">Recommendations</div>
-  <div class="rec-panel">
+  <div class="section-title" style="margin-top: 20px;">&#128161; Recommendations</div>
+  <div class="rec-grid">
     {% for rec in recommendations %}
-    <div class="rec-item"><span class="rec-num">{{ loop.index }}.</span><span>{{ rec }}</span></div>
+    <div class="rec-card">
+      <div class="rec-head">&#128161; Recommendation {{ loop.index }}</div>
+      {{ rec }}
+    </div>
     {% endfor %}
   </div>
   {% endif %}
@@ -457,7 +421,7 @@
   {% set passed = checks_status | selectattr("status", "equalto", "passed") | list %}
   {% if passed %}
   <details style="margin-top: 20px;">
-    <summary class="section-title" style="cursor:pointer; display:inline-block;">Passed Checks ({{ passed | length }}) &#9656;</summary>
+    <summary class="section-title" style="cursor:pointer; display:inline-block;">&#9989; Passed Checks ({{ passed | length }}) &#9656;</summary>
     <div class="card" style="margin-top: 10px;">
       <div class="passed-list">
         {% for p in passed %}
@@ -468,7 +432,12 @@
   </details>
   {% endif %}
 
-  <footer>Generated by LeakLens &mdash; leakage &amp; drift QA for ML datasets.</footer>
+  <footer>
+    Generated by LeakLens &mdash; leakage &amp; drift QA for ML datasets.<br>
+    <a href="https://github.com/Prajwal18py/leaklens" target="_blank">GitHub</a> &middot;
+    <a href="https://pypi.org/project/leaklens/" target="_blank">PyPI</a> &middot;
+    <a href="https://github.com/Prajwal18py/leaklens#readme" target="_blank">Documentation</a>
+  </footer>
 </div>
 </body>
 </html>
