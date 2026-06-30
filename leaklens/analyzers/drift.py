@@ -1,88 +1,95 @@
+from typing import List, Optional
 import numpy as np
-import plotly.graph_objects as go
 import pandas as pd
-from scipy.stats import gaussian_kde
+from scipy.stats import ks_2samp
+
+from .base import BaseAnalyzer
+from ..models.issue import Issue
+from ..models.severity import Severity
+from ..utils import safe_numeric_columns, is_likely_identifier_column
 
 
-def numeric_drift_figure(col: str, train_series: pd.Series, test_series: pd.Series):
-    fig = go.Figure()
-    fig.add_trace(go.Histogram(
-        x=train_series.dropna(), name="Train", opacity=0.6, histnorm="probability density",
-        marker_color="#6366f1",
-    ))
-    fig.add_trace(go.Histogram(
-        x=test_series.dropna(), name="Test", opacity=0.6, histnorm="probability density",
-        marker_color="#f97316",
-    ))
-    fig.update_layout(
-        barmode="overlay",
-        title=f"Distribution Drift — {col}",
-        xaxis_title=col,
-        yaxis_title="Density",
-        template="plotly_white",
-        height=350,
-        margin=dict(t=50, b=40, l=40, r=20),
-    )
-    return fig
+class DriftAnalyzer(BaseAnalyzer):
+    """Compares train vs test distributions column by column: KS test for
+    numeric columns, Population Stability Index (PSI) for categorical ones.
 
+    Identifier-like categorical columns (names, ticket numbers, free-text
+    IDs) are skipped — every value differing between train/test is expected
+    for a near-unique column, so PSI/unseen-category checks there are noise,
+    not signal. Numeric columns are never skipped this way, since KS drift
+    on a numeric ID-like column (e.g. PassengerId) is still meaningful.
+    """
 
-def numeric_drift_kde_figure(col: str, train_series: pd.Series, test_series: pd.Series):
-    """Smooth KDE overlay — reads better than overlapping histogram bars,
-    especially when train/test have different sample sizes or bin alignment
-    makes the histogram look noisy."""
-    train_clean = train_series.dropna().astype(float)
-    test_clean = test_series.dropna().astype(float)
+    name = "drift"
 
-    fig = go.Figure()
-    if len(train_clean) >= 2 and train_clean.nunique() > 1:
-        x_min = min(train_clean.min(), test_clean.min()) if len(test_clean) else train_clean.min()
-        x_max = max(train_clean.max(), test_clean.max()) if len(test_clean) else train_clean.max()
-        x_grid = np.linspace(x_min, x_max, 200)
+    def run(self, train, test=None, target: Optional[str] = None) -> List[Issue]:
+        issues: List[Issue] = []
+        if test is None:
+            return issues
 
-        train_kde = gaussian_kde(train_clean)
-        fig.add_trace(go.Scatter(
-            x=x_grid, y=train_kde(x_grid), name="Train", mode="lines",
-            line=dict(color="#6366f1", width=3), fill="tozeroy",
-            fillcolor="rgba(99,102,241,0.15)",
-        ))
-        if len(test_clean) >= 2 and test_clean.nunique() > 1:
-            test_kde = gaussian_kde(test_clean)
-            fig.add_trace(go.Scatter(
-                x=x_grid, y=test_kde(x_grid), name="Test", mode="lines",
-                line=dict(color="#f97316", width=3), fill="tozeroy",
-                fillcolor="rgba(249,115,22,0.15)",
-            ))
-    fig.update_layout(
-        title=f"Distribution Drift — {col}",
-        xaxis_title=col,
-        yaxis_title="Density",
-        template="plotly_white",
-        height=320,
-        margin=dict(t=50, b=40, l=40, r=20),
-    )
-    return fig
+        numeric_cols = set(safe_numeric_columns(train))
+        common_cols = [c for c in train.columns if c in test.columns and c != target]
 
+        for col in common_cols:
+            if col in numeric_cols and col in safe_numeric_columns(test):
+                issues.extend(self._check_numeric_drift(col, train[col], test[col]))
+            else:
+                if is_likely_identifier_column(
+                    train[col],
+                    self.config.high_cardinality_ratio_threshold,
+                    self.config.high_cardinality_absolute_threshold,
+                ):
+                    continue
+                issues.extend(self._check_categorical_drift(col, train[col], test[col]))
+        return issues
 
-def categorical_drift_figure(col: str, train_series: pd.Series, test_series: pd.Series):
-    train_dist = train_series.value_counts(normalize=True)
-    test_dist = test_series.value_counts(normalize=True)
-    categories = sorted(set(train_dist.index) | set(test_dist.index), key=str)
+    def _check_numeric_drift(self, col, train_series, test_series) -> List[Issue]:
+        train_clean = train_series.dropna()
+        test_clean = test_series.dropna()
+        if len(train_clean) < 5 or len(test_clean) < 5:
+            return []
+        stat, p_value = ks_2samp(train_clean, test_clean)
+        if p_value < self.config.ks_alpha:
+            severity = Severity.CRITICAL if p_value < 0.001 else Severity.WARNING
+            return [Issue(
+                title="Distribution Drift",
+                severity=severity,
+                column=col,
+                analyzer=self.name,
+                message=f"KS test p-value={p_value:.4f} — train/test distributions differ significantly.",
+                details={"ks_stat": float(stat), "p_value": float(p_value), "test": "ks"},
+            )]
+        return []
 
-    fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=[str(c) for c in categories], y=[train_dist.get(c, 0) for c in categories],
-        name="Train", marker_color="#6366f1",
-    ))
-    fig.add_trace(go.Bar(
-        x=[str(c) for c in categories], y=[test_dist.get(c, 0) for c in categories],
-        name="Test", marker_color="#f97316",
-    ))
-    fig.update_layout(
-        barmode="group",
-        title=f"Category Distribution — {col}",
-        yaxis_title="Proportion",
-        template="plotly_white",
-        height=350,
-        margin=dict(t=50, b=40, l=40, r=20),
-    )
-    return fig
+    def _check_categorical_drift(self, col, train_series, test_series) -> List[Issue]:
+        psi = self._calculate_psi(train_series, test_series)
+        if psi is None:
+            return []
+        if psi >= self.config.psi_critical:
+            severity = Severity.CRITICAL
+        elif psi >= self.config.psi_warning:
+            severity = Severity.WARNING
+        else:
+            return []
+        return [Issue(
+            title="Distribution Drift",
+            severity=severity,
+            column=col,
+            analyzer=self.name,
+            message=f"PSI={psi:.3f} — category distribution shifted between train and test.",
+            details={"psi": float(psi), "test": "psi"},
+        )]
+
+    @staticmethod
+    def _calculate_psi(train_series, test_series, eps: float = 1e-6) -> Optional[float]:
+        train_dist = train_series.value_counts(normalize=True)
+        test_dist = test_series.value_counts(normalize=True)
+        categories = set(train_dist.index) | set(test_dist.index)
+        if not categories:
+            return None
+        psi = 0.0
+        for cat in categories:
+            p = max(train_dist.get(cat, eps), eps)
+            q = max(test_dist.get(cat, eps), eps)
+            psi += (p - q) * np.log(p / q)
+        return abs(float(psi))
