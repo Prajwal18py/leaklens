@@ -55,6 +55,14 @@
   .status-meta { margin-left: auto; display: flex; gap: 22px; text-align: right; }
   .status-meta .m-num { font-size: 18px; font-weight: 700; }
   .status-meta .m-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .primary-risks { margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pr-label { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .pr-chip { font-size: 12px; background: rgba(0,0,0,0.04); border-radius: 100px; padding: 3px 10px; font-weight: 600; }
+
+  .export-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+  .export-btn { background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit; }
+  .export-btn:hover { background: #F1F5F9; }
+  @media print { .export-bar { display: none; } }
 
   .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
@@ -129,7 +137,8 @@
 
   .hc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
   .hc-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: #FAFAFB; }
-  .hc-card .name { font-weight: 600; font-size: 13.5px; margin-bottom: 8px; }
+  .hc-card .name { font-weight: 600; font-size: 13.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .hc-badge { font-size: 10px; font-weight: 700; background: #FEE2E2; color: var(--critical); padding: 2px 7px; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.02em; }
   .hc-card .stat-line { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
   .hc-card .stat-line b { color: var(--text); }
   .hc-card .rec { font-size: 11.5px; color: var(--primary); margin-top: 8px; }
@@ -148,9 +157,15 @@
   .status-pill.drifted { background: #FEE2E2; color: var(--critical); }
   .status-pill.stable { background: #DCFCE7; color: var(--success); }
 
-  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-  .rec-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 14px 16px; font-size: 13px; color: #1E3A8A; line-height: 1.5; }
-  .rec-card .rec-head { font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; color: #1D4ED8; }
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .rec-card { background: #FAFBFF; border: 1px solid var(--border); border-left: 3px solid var(--info); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; color: var(--text); line-height: 1.45; }
+  .rec-card.sev-critical { border-left-color: var(--critical); background: #FEF8F8; }
+  .rec-card.sev-warning { border-left-color: var(--warning); background: #FFFCF5; }
+  .rec-card .rec-head { font-weight: 700; font-size: 12.5px; margin-bottom: 5px; }
+  .rec-card .rec-why { color: var(--muted); margin-bottom: 6px; }
+  .rec-card .rec-fix-label { font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 3px; }
+  .rec-card .rec-fix-list { margin: 0; padding: 0; list-style: none; }
+  .rec-card .rec-fix-list li { margin-bottom: 2px; color: #166534; font-size: 12px; }
 
   .passed-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .passed-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 6px 0; }
@@ -197,12 +212,23 @@
     <div>
       <div class="status-title">{{ verdict }}</div>
       <div class="status-desc">{{ verdict_reason }}</div>
+      {% if primary_risks %}
+      <div class="primary-risks">
+        <span class="pr-label">Primary risks:</span>
+        {% for risk in primary_risks %}<span class="pr-chip">{{ issue_icons.get(risk, '')|safe }} {{ risk }}</span>{% endfor %}
+      </div>
+      {% endif %}
     </div>
     <div class="status-meta">
       <div><div class="m-num">{{ critical_count }}</div><div class="m-label">Critical</div></div>
       <div><div class="m-num">{{ passed_count }}</div><div class="m-label">Passed</div></div>
       <div><div class="m-num">{{ meta.runtime_seconds }}s</div><div class="m-label">Runtime</div></div>
     </div>
+  </div>
+
+  <div class="export-bar">
+    <button class="export-btn" onclick="leaklensExportJSON()">&#11015; Export JSON</button>
+    <button class="export-btn" onclick="window.print()">&#128424; Print / Save as PDF</button>
   </div>
 
   <div class="summary-grid">
@@ -233,7 +259,7 @@
       <div class="section-title">&#128203; Checks Summary</div>
       {% for c in checks_status %}
       <div class="check-row">
-        <span>{{ c.name }}</span>
+        <span>{{ issue_icons.get(c.name, '')|safe }} {{ c.name }}</span>
         <span class="check-status {{ c.status }}">
           {% if c.status == "passed" %}&#10004; Passed{% else %}{{ c.count }} found{% endif %}
         </span>
@@ -282,7 +308,7 @@
     <details class="issue-panel">
       <summary class="issue-summary">
         <span class="badge {{ issue.severity.value }}">{{ issue.severity.value }}</span>
-        <span class="it">{{ issue.title }}</span>
+        <span class="it">{{ issue_icons.get(issue.title, '')|safe }} {{ issue.title }}</span>
         {% if issue.column %}<span class="ic">{{ issue.column }}</span>{% endif %}
         {% if issue.details.get('psi') is not none %}<span class="ic" style="background:#EFF6FF;color:var(--primary);">PSI = {{ "%.3f"|format(issue.details['psi']) }}</span>
         {% elif issue.details.get('ks_stat') is not none %}<span class="ic" style="background:#EFF6FF;color:var(--primary);">KS = {{ "%.3f"|format(issue.details['ks_stat']) }}</span>
@@ -306,6 +332,20 @@
           {% endif %}
           {% endfor %}
         </div>
+        {% endif %}
+
+        {% set thr = none %}
+        {% if issue.details.get('correlation') is not none %}{% set thr = thresholds.target_corr_threshold %}
+        {% elif issue.details.get('cramers_v') is not none %}{% set thr = thresholds.cramers_v_threshold %}
+        {% elif issue.details.get('mapped_fraction') is not none %}{% set thr = thresholds.near_identical_mapping_threshold %}
+        {% elif issue.details.get('psi') is not none %}{% set thr = (thresholds.psi_critical if issue.severity.value == 'critical' else thresholds.psi_warning) %}
+        {% elif issue.details.get('p_value') is not none %}{% set thr = thresholds.ks_alpha %}
+        {% elif issue.details.get('overlap_pct') is not none %}{% set thr = (thresholds.contamination_critical_pct if issue.severity.value == 'critical' else thresholds.contamination_warning_pct) %}
+        {% elif issue.details.get('top_value_freq') is not none %}{% set thr = thresholds.constant_feature_threshold %}
+        {% endif %}
+        {% if thr is not none %}
+        <div class="row-label">Threshold Used</div>
+        <div class="row-val">This check flags values past <b>{{ "%.3f"|format(thr) }}</b> — fully configurable via <code>Config()</code>.</div>
         {% endif %}
 
         {% if why_it_matters.get(issue.title) %}
@@ -380,7 +420,7 @@
     <div class="hc-grid">
       {% for hc in high_cardinality_cards %}
       <div class="hc-card">
-        <div class="name">{{ hc.column }}</div>
+        <div class="name">{{ hc.column }} <span class="hc-badge">&#128308; High Cardinality</span></div>
         <div class="stat-line"><span>Unique values</span><b>{{ hc.unique_values }}</b></div>
         <div class="stat-line"><span>Unseen in test</span><b>{{ hc.unseen_count }}</b></div>
         <div class="rec">{{ hc.recommendation }}</div>
@@ -427,18 +467,15 @@
       {% set key = issue.title ~ '|' ~ (issue.column or '') %}
       {% if key not in seen_rec_keys and loop.index0 < 6 and fix_steps.get(issue.title) %}
         {% set _ = seen_rec_keys.append(key) %}
-        <div class="rec-card">
-          <div class="rec-head">&#128161; Recommended Action {{ seen_rec_keys | length }}</div>
-          <div style="font-weight:600; margin-bottom:8px;">
-            {{ issue.title }}{% if issue.column %} &mdash; '{{ issue.column }}'{% endif %}
-          </div>
+        <div class="rec-card sev-{{ issue.severity.value }}">
+          <div class="rec-head">{{ issue_icons.get(issue.title, '')|safe }} {{ issue.title }}{% if issue.column %} &mdash; {{ issue.column }}{% endif %}</div>
           {% if why_it_matters.get(issue.title) %}
-          <div style="margin-bottom:8px;"><b>Why?</b> {{ why_it_matters[issue.title] }}</div>
+          <div class="rec-why">&bull; {{ why_it_matters[issue.title] }}</div>
           {% endif %}
-          <div style="font-weight:600; margin-bottom:4px;">Suggested Fix</div>
-          <ul style="margin:0; padding-left:18px;">
+          <div class="rec-fix-label">Suggested fix</div>
+          <ul class="rec-fix-list">
             {% for step in fix_steps[issue.title] %}
-            <li style="margin-bottom:3px;">{{ step }}</li>
+            <li>&#10004; {{ step }}</li>
             {% endfor %}
           </ul>
         </div>
@@ -462,11 +499,27 @@
   {% endif %}
 
   <footer>
-    Generated by LeakLens &mdash; leakage &amp; drift QA for ML datasets.<br>
+    Generated by LeakLens v{{ meta.version }} &mdash; leakage &amp; drift QA for ML datasets. MIT License.<br>
     <a href="https://github.com/Prajwal18py/leaklens" target="_blank">GitHub</a> &middot;
     <a href="https://pypi.org/project/leaklens/" target="_blank">PyPI</a> &middot;
     <a href="https://github.com/Prajwal18py/leaklens#readme" target="_blank">Documentation</a>
   </footer>
 </div>
+
+<script id="leaklens-export-data" type="application/json">{{ export_json | safe }}</script>
+<script>
+function leaklensExportJSON() {
+  const data = document.getElementById('leaklens-export-data').textContent;
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'leaklens_report.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
 </body>
 </html>

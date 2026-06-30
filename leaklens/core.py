@@ -75,6 +75,23 @@ FIX_STEPS = {
 }
 
 
+ISSUE_ICONS = {
+    "Target Leakage": "&#127919;",
+    "Distribution Drift": "&#128200;",
+    "Train/Test Contamination": "&#129516;",
+    "Duplicate Rows": "&#128203;",
+    "Temporal Leakage": "&#128337;",
+    "Duplicate Columns": "&#128230;",
+    "Schema Mismatch": "&#129513;",
+    "Schema Validation": "&#129513;",
+    "Dtype Mismatch": "&#129513;",
+    "Unseen Categories": "&#128194;",
+    "Constant Feature": "&#9888;",
+    "Near-Constant Feature": "&#9888;",
+    "Preprocessing Leakage": "&#128295;",
+}
+
+
 class LeakLens:
     """Inspects a train/test split (or a single dataset) for the issues that
     most commonly invalidate an ML experiment: target leakage, train/test
@@ -155,8 +172,11 @@ class LeakLens:
         report.meta["numeric_drift_figures"] = self._build_numeric_drift_figures(report)
         report.meta["why_it_matters"] = WHY_IT_MATTERS
         report.meta["fix_steps"] = FIX_STEPS
+        report.meta["issue_icons"] = ISSUE_ICONS
         report.meta["risk_label"] = self._compute_risk_label(report)
-        report.meta["verdict"], report.meta["verdict_reason"] = self._compute_verdict(report)
+        report.meta["verdict"], report.meta["verdict_reason"], report.meta["primary_risks"] = self._compute_verdict(report)
+        report.meta["thresholds"] = self._build_thresholds()
+        report.meta["export_json"] = self._build_export_json(report)
 
         return report
 
@@ -353,9 +373,49 @@ class LeakLens:
         just a clearer restatement of data that's already there."""
         critical_issues = report.critical
         if critical_issues:
-            names = ", ".join(sorted({f"'{i.column}'" if i.column else i.title for i in critical_issues[:3]}))
-            reason = f"{len(critical_issues)} critical issue(s) found, including {names}."
-            return "DO NOT TRAIN", reason
+            primary_risks = list(dict.fromkeys(i.title for i in critical_issues))  # dedup, preserve order
+            reason = f"{len(critical_issues)} critical issue(s) found."
+            return "DO NOT TRAIN", reason, primary_risks
         if report.warnings:
-            return "TRAIN WITH CAUTION", f"{len(report.warnings)} warning(s) found — review before relying on results."
-        return "SAFE TO TRAIN", "All checks passed — no leakage, drift, or schema issues detected."
+            primary_risks = list(dict.fromkeys(i.title for i in report.warnings))
+            return "TRAIN WITH CAUTION", f"{len(report.warnings)} warning(s) found — review before relying on results.", primary_risks
+        return "SAFE TO TRAIN", "All checks passed — no leakage, drift, or schema issues detected.", []
+
+    def _build_thresholds(self) -> Dict[str, float]:
+        """Snapshot of the actual Config values used for this run, so the
+        report can show 'Detected vs Threshold' honestly — every number here
+        is a real value that drove a real decision, not decoration."""
+        c = self.config
+        return {
+            "target_corr_threshold": c.target_corr_threshold,
+            "cramers_v_threshold": c.cramers_v_threshold,
+            "near_identical_mapping_threshold": 0.98,  # hardcoded in TargetLeakageAnalyzer
+            "psi_warning": c.psi_warning,
+            "psi_critical": c.psi_critical,
+            "ks_alpha": c.ks_alpha,
+            "contamination_warning_pct": c.contamination_warning_pct,
+            "contamination_critical_pct": c.contamination_critical_pct,
+            "duplicate_column_corr_threshold": c.duplicate_column_corr_threshold,
+            "constant_feature_threshold": c.constant_feature_threshold,
+        }
+
+    def _build_export_json(self, report: Report) -> str:
+        """A lean JSON export (issues + summary only) — deliberately
+        excludes the embedded Plotly figure HTML from the full report.meta,
+        since that would bloat the exported payload with megabytes of
+        duplicated chart markup."""
+        import json
+        data = {
+            "dataset_name": self.dataset_name,
+            "target": self.target,
+            "n_train_rows": len(self.train),
+            "n_test_rows": len(self.test) if self.test is not None else None,
+            "verdict": report.meta.get("verdict"),
+            "verdict_reason": report.meta.get("verdict_reason"),
+            "critical_count": len(report.critical),
+            "warning_count": len(report.warnings),
+            "checks_run": report.checks_run,
+            "issues": [i.to_dict() for i in report.issues],
+        }
+        json_str = json.dumps(data, indent=2, default=str)
+        return json_str.replace("</", "<\\/")

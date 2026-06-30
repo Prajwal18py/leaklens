@@ -35,8 +35,12 @@ def render_html(report) -> str:
         numeric_drift_figures=report.meta.get("numeric_drift_figures", []),
         why_it_matters=report.meta.get("why_it_matters", {}),
         fix_steps=report.meta.get("fix_steps", {}),
+        issue_icons=report.meta.get("issue_icons", {}),
         risk_label=report.meta.get("risk_label", "LOW RISK"),
         verdict=report.meta.get("verdict", "SAFE TO TRAIN"),
         verdict_reason=report.meta.get("verdict_reason", ""),
+        primary_risks=report.meta.get("primary_risks", []),
+        thresholds=report.meta.get("thresholds", {}),
+        export_json=report.meta.get("export_json", "{}"),
         meta=report.meta,
     )
