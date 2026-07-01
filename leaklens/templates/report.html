@@ -62,7 +62,37 @@
   .export-bar { display: flex; gap: 10px; margin-bottom: 20px; }
   .export-btn { background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; font-family: inherit; }
   .export-btn:hover { background: #F1F5F9; }
-  @media print { .export-bar { display: none; } }
+  @media print {
+    .export-bar { display: none; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+    body { background: white; }
+
+    /* <details> are collapsed by default — without this, print only shows
+       the summary line of every issue and the report looks broken/empty. */
+    details { display: block !important; }
+    details > summary { list-style: none; }
+    details .issue-detail { display: block !important; }
+    .chevron { display: none; }
+
+    /* Prevent cards/panels from being sliced across a page boundary */
+    .card, .issue-panel, .rec-card, .hc-card, .dq-card, .numeric-figure-card, .summary-card {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      box-shadow: none;
+    }
+    .row, .summary-grid, .dq-grid, .hc-grid, .rec-grid { page-break-inside: avoid; }
+
+    /* Plotly auto-sizes to its container's pixel width, which print
+       rendering gets wrong (causes blurry upscaled charts) unless the
+       container has an explicit, fixed print width. */
+    .js-plotly-plot, .plot-container { width: 100% !important; }
+    .numeric-figure-card, .figure-card { max-width: 700px; margin-left: auto; margin-right: auto; }
+
+    a { color: inherit !important; text-decoration: none !important; }
+    .container { max-width: 100%; padding: 0; }
+  }
 
   .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
@@ -201,6 +231,7 @@
       <div class="chip">Train <b>{{ meta.n_train_rows }}</b></div>
       {% if meta.n_test_rows %}<div class="chip">Test <b>{{ meta.n_test_rows }}</b></div>{% endif %}
       {% if meta.target %}<div class="chip">Target <b>{{ meta.target }}</b></div>{% endif %}
+      {% if train_fingerprint %}<div class="chip" title="Schema + distribution hash — confirms two runs used identical data">&#129512; <b>{{ train_fingerprint.schema_hash }}</b></div>{% endif %}
     </div>
   </header>
 
@@ -324,13 +355,20 @@
         <div class="row-label">Metrics</div>
         <div class="metric-grid">
           {% for k, v in issue.details.items() %}
-          {% if k not in ("test",) %}
+          {% if k not in ("test", "root_cause") %}
           <div class="metric-item">
             <div class="mv">{{ "%.4f"|format(v) if v is number and (v is not integer or v|float != v) else v }}</div>
             <div class="ml">{{ k }}</div>
           </div>
           {% endif %}
           {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if issue.details.get('root_cause') %}
+        <div class="row-label">Likely Cause</div>
+        <div class="row-val">
+          {% for cause in issue.details['root_cause'] %}&#10004; {{ cause }}<br>{% endfor %}
         </div>
         {% endif %}
 
@@ -520,6 +558,15 @@ function leaklensExportJSON() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+// Plotly renders once at screen size via JS and doesn't reliably redraw for
+// print media — without this, charts get blurrily upscaled by the print
+// engine instead of redrawn crisp at the correct print width.
+window.addEventListener('beforeprint', function () {
+  document.querySelectorAll('.js-plotly-plot').forEach(function (plotDiv) {
+    if (window.Plotly) { window.Plotly.Plots.resize(plotDiv); }
+  });
+});
 </script>
 </body>
 </html>

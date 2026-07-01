@@ -33,3 +33,8 @@ class Config:
     # expected, not a data quality issue.
     high_cardinality_ratio_threshold: float = 0.3
     high_cardinality_absolute_threshold: int = 50
+
+    # Missing value leakage — correlation between a column's missingness
+    # and the target (point-biserial for numeric target, Cramer's V for
+    # categorical target)
+    missingness_corr_threshold: float = 0.3

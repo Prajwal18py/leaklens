@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: leaklens
-Version: 0.1.0
+Version: 1.0.0
 Summary: Leakage & drift QA for ML datasets — catches target leakage, train/test contamination, distribution drift, temporal leakage, schema mismatches, and duplicate columns before they wreck your model.
 Author: Prajwal
 License: MIT

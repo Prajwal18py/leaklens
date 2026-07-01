@@ -48,6 +48,39 @@ def safe_categorical_columns(df: pd.DataFrame):
     return df.select_dtypes(exclude="number").columns.tolist()
 
 
+def compute_fingerprint(df: pd.DataFrame) -> dict:
+    """A reproducible fingerprint of a dataframe: schema hash (column names
+    + dtypes) and a distribution hash (rounded summary stats per numeric
+    column + value-count signature per categorical column). Lets two runs
+    answer 'are we actually looking at the same data?' without comparing
+    full datasets — same idea as a file checksum, applied to tabular data.
+    """
+    import hashlib
+
+    schema_repr = "|".join(f"{c}:{df[c].dtype}" for c in sorted(df.columns))
+    schema_hash = hashlib.sha256(schema_repr.encode()).hexdigest()[:16]
+
+    parts = []
+    for col in sorted(df.columns):
+        series = df[col]
+        if pd.api.types.is_numeric_dtype(series):
+            clean = series.dropna()
+            if len(clean) > 0:
+                parts.append(f"{col}:{clean.mean():.4g}:{clean.std():.4g}:{clean.min():.4g}:{clean.max():.4g}")
+        else:
+            top_vals = series.value_counts(normalize=True).head(5)
+            parts.append(f"{col}:" + ",".join(f"{v:.4g}" for v in top_vals.values))
+    dist_repr = "|".join(parts)
+    distribution_hash = hashlib.sha256(dist_repr.encode()).hexdigest()[:16]
+
+    return {
+        "schema_hash": schema_hash,
+        "distribution_hash": distribution_hash,
+        "n_rows": len(df),
+        "n_columns": len(df.columns),
+    }
+
+
 def is_likely_identifier_column(series: pd.Series, ratio_threshold: float, absolute_threshold: int) -> bool:
     """Heuristic for 'this is an ID/free-text column, not a real categorical
     feature' — names, ticket numbers, cabin codes, etc. Columns like this

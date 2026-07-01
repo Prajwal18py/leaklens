@@ -5,7 +5,7 @@ from scipy.stats import ks_2samp
 
 from .config import Config
 from .exceptions import InvalidTargetError, EmptyDataFrameError
-from .utils import to_pandas, safe_numeric_columns, is_likely_identifier_column
+from .utils import to_pandas, safe_numeric_columns, is_likely_identifier_column, compute_fingerprint
 from .models.report import Report
 from .models.severity import Severity
 from .analyzers.target_leakage import TargetLeakageAnalyzer
@@ -14,6 +14,7 @@ from .analyzers.drift import DriftAnalyzer
 from .analyzers.temporal import TemporalLeakageAnalyzer
 from .analyzers.duplicate_columns import DuplicateColumnsAnalyzer
 from .analyzers.schema import SchemaAnalyzer
+from .analyzers.missing_value_leakage import MissingValueLeakageAnalyzer
 from .analyzers.preprocessing import PreprocessingLeakageAnalyzer
 from .visualizations.drift import numeric_drift_kde_figure
 
@@ -24,6 +25,7 @@ ANALYZER_DISPLAY_NAMES = {
     "temporal_leakage": "Temporal Leakage",
     "duplicate_columns": "Duplicate Columns",
     "schema": "Schema Validation",
+    "missing_value_leakage": "Missing Value Leakage",
     "preprocessing_leakage": "Preprocessing Leakage",
 }
 
@@ -39,6 +41,7 @@ RECOMMENDATION_TEMPLATES = {
     "Unseen Categories": "Handle unseen categories in '{col}' with an 'unknown' bucket or a robust encoder.",
     "Constant Feature": "Drop '{col}' — it carries no information.",
     "Near-Constant Feature": "Review '{col}' — it has very low variance and may not be useful.",
+    "Missing Value Leakage": "Investigate why '{col}' is missing — the pattern of missingness itself appears predictive.",
 }
 
 # Short, generic "why this matters" context shown inside each issue's
@@ -55,6 +58,7 @@ WHY_IT_MATTERS = {
     "Unseen Categories": "Most encoders (one-hot, label encoding) fail or silently produce wrong results on categories they never saw during fit.",
     "Constant Feature": "A column with no variance contributes zero predictive signal and only adds noise/dimensionality.",
     "Near-Constant Feature": "Very low-variance columns rarely help a model and can be safely dropped after a quick check.",
+    "Missing Value Leakage": "If whether a value is missing correlates with the target, an imputation strategy that fills in a 'typical' value will erase that signal — or worse, a missingness indicator could leak the target directly if added as a feature without realizing why it's predictive.",
 }
 
 
@@ -72,6 +76,7 @@ FIX_STEPS = {
     "Unseen Categories": ["Use an encoder that handles unknowns (e.g. handle_unknown='ignore')", "Add an explicit 'unknown' bucket", "Re-check category coverage between sets"],
     "Constant Feature": ["Drop the column — it adds no signal", "Confirm it isn't a data loading bug (e.g. wrong column selected)"],
     "Near-Constant Feature": ["Review the column's variance", "Consider dropping if not domain-critical"],
+    "Missing Value Leakage": ["Check whether the missingness mechanism relates to the target (e.g. by data collection process)", "Add a missingness indicator deliberately if it's a real signal, not by accident", "Re-evaluate the imputation strategy"],
 }
 
 
@@ -89,6 +94,7 @@ ISSUE_ICONS = {
     "Constant Feature": "&#9888;",
     "Near-Constant Feature": "&#9888;",
     "Preprocessing Leakage": "&#128295;",
+    "Missing Value Leakage": "&#128203;",
 }
 
 
@@ -134,6 +140,7 @@ class LeakLens:
             TemporalLeakageAnalyzer(self.config),
             DuplicateColumnsAnalyzer(self.config),
             SchemaAnalyzer(self.config),
+            MissingValueLeakageAnalyzer(self.config),
         ]
 
     def run(self) -> Report:
@@ -177,6 +184,8 @@ class LeakLens:
         report.meta["verdict"], report.meta["verdict_reason"], report.meta["primary_risks"] = self._compute_verdict(report)
         report.meta["thresholds"] = self._build_thresholds()
         report.meta["export_json"] = self._build_export_json(report)
+        report.meta["train_fingerprint"] = compute_fingerprint(self.train)
+        report.meta["test_fingerprint"] = compute_fingerprint(self.test) if self.test is not None else None
 
         return report
 
@@ -410,6 +419,8 @@ class LeakLens:
             "target": self.target,
             "n_train_rows": len(self.train),
             "n_test_rows": len(self.test) if self.test is not None else None,
+            "train_fingerprint": compute_fingerprint(self.train),
+            "test_fingerprint": compute_fingerprint(self.test) if self.test is not None else None,
             "verdict": report.meta.get("verdict"),
             "verdict_reason": report.meta.get("verdict_reason"),
             "critical_count": len(report.critical),
@@ -418,4 +429,6 @@ class LeakLens:
             "issues": [i.to_dict() for i in report.issues],
         }
         json_str = json.dumps(data, indent=2, default=str)
+        # Defensive: prevent a column/value containing "</script>" from
+        # breaking out of the embedded <script> tag in the HTML report.
         return json_str.replace("</", "<\\/")

@@ -57,9 +57,33 @@ class DriftAnalyzer(BaseAnalyzer):
                 column=col,
                 analyzer=self.name,
                 message=f"KS test p-value={p_value:.4f} — train/test distributions differ significantly.",
-                details={"ks_stat": float(stat), "p_value": float(p_value), "test": "ks"},
+                details={
+                    "ks_stat": float(stat), "p_value": float(p_value), "test": "ks",
+                    **self._root_cause(train_clean, test_clean),
+                },
             )]
         return []
+
+    @staticmethod
+    def _root_cause(train_clean, test_clean) -> dict:
+        """Plain statistics explaining *what shape* of drift occurred — not
+        a model, not an LLM, just comparing summary statistics between the
+        two samples so the report can say more than 'drift detected'."""
+        causes = []
+        train_mean, test_mean = train_clean.mean(), test_clean.mean()
+        train_std, test_std = train_clean.std(), test_clean.std()
+        train_p95, test_p95 = train_clean.quantile(0.95), test_clean.quantile(0.95)
+
+        if train_std > 0 and abs(test_mean - train_mean) / train_std > 0.3:
+            direction = "increased" if test_mean > train_mean else "decreased"
+            causes.append(f"Mean {direction} ({train_mean:.3g} → {test_mean:.3g})")
+        if train_std > 0 and abs(test_std - train_std) / train_std > 0.3:
+            direction = "increased" if test_std > train_std else "decreased"
+            causes.append(f"Variance {direction} (std {train_std:.3g} → {test_std:.3g})")
+        if train_p95 != 0 and abs(test_p95 - train_p95) / abs(train_p95) > 0.3:
+            causes.append(f"95th percentile shifted ({train_p95:.3g} → {test_p95:.3g})")
+
+        return {"root_cause": causes} if causes else {}
 
     def _check_categorical_drift(self, col, train_series, test_series) -> List[Issue]:
         psi = self._calculate_psi(train_series, test_series)

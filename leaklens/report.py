@@ -42,5 +42,6 @@ def render_html(report) -> str:
         primary_risks=report.meta.get("primary_risks", []),
         thresholds=report.meta.get("thresholds", {}),
         export_json=report.meta.get("export_json", "{}"),
+        train_fingerprint=report.meta.get("train_fingerprint"),
         meta=report.meta,
     )
