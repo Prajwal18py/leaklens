@@ -1,0 +1,50 @@
+name: LeakLens Data QA
+
+# Example workflow: fails the build if LeakLens finds critical issues
+# (target leakage, severe drift, or train/test contamination) in the
+# dataset used by this repository's training pipeline.
+#
+# Copy this file into your own repo's .github/workflows/ and adjust the
+# `--target` flag and CSV paths to match your project.
+
+on:
+  pull_request:
+    paths:
+      - "data/**"
+      - "train.py"
+      - "**.csv"
+
+jobs:
+  leaklens-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install LeakLens
+        run: pip install "leaklens[cli]"
+
+      - name: Run LeakLens QA check
+        run: |
+          leaklens data/train.csv data/test.csv \
+            --target target_column_name \
+            --report leaklens_report.html \
+            --json leaklens_report.json \
+            --fail-on critical
+
+      - name: Upload report as build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leaklens-report
+          path: |
+            leaklens_report.html
+            leaklens_report.json
+
+      # leaklens check exits non-zero automatically when a critical issue
+      # is found, so no separate "fail on critical" step is needed — the
+      # job fails naturally if the run step above returns a non-zero code.

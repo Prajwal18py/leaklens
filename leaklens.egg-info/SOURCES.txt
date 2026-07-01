@@ -19,6 +19,7 @@ leaklens/analyzers/base.py
 leaklens/analyzers/contamination.py
 leaklens/analyzers/drift.py
 leaklens/analyzers/duplicate_columns.py
+leaklens/analyzers/missing_value_leakage.py
 leaklens/analyzers/preprocessing.py
 leaklens/analyzers/schema.py
 leaklens/analyzers/target_leakage.py
@@ -35,7 +36,9 @@ tests/test_contamination.py
 tests/test_core.py
 tests/test_drift.py
 tests/test_duplicate_columns.py
+tests/test_missing_value_leakage.py
 tests/test_preprocessing.py
+tests/test_preprocessing_expanded.py
 tests/test_schema.py
 tests/test_target_leakage.py
 tests/test_temporal.py
