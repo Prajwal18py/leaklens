@@ -15,7 +15,11 @@ pip install leaklens
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
+![LeakLens Dashboard](https://github.com/user-attachments/assets/bae7ed41-aa5d-425c-8cd1-d7e56bd92729)
 
+![LeakLens Banner](https://github.com/user-attachments/assets/a9e60c31-b2f8-446b-ac44-16fbc9052ccf)
+
+![LeakLens Clean](https://github.com/user-attachments/assets/596b88b3-6e63-4623-a76b-f6a2b5d1d33d)
 ## Why
 
 The most common way an ML project fails isn't a bad model — it's a corrupted experiment. Target leakage, contaminated splits, drifted test sets, and preprocessing fit before the split all produce results that look great in your notebook and fall apart in production.
